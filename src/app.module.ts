@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
 import configuration from './config/configuration';
-
+import { PriceModule } from './price/price.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,6 +24,7 @@ import configuration from './config/configuration';
       }),
       inject: [ConfigService],
     }),
+    PriceModule,
   ],
 })
 export class AppModule {}
