@@ -18,7 +18,7 @@ export class ScheduledTasksService {
     await this.priceService.savePrices();
   }
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_10_SECONDS)
   async handleAlertChecking() {
     this.logger.log('Checking alerts');
     await this.alertService.checkAlerts();

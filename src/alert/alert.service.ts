@@ -67,6 +67,7 @@ export class AlertService {
     for (const chain of chains) {
       try {
         const prices = await this.priceService.getPricesLastHour(chain);
+        console.log(prices);
         if (prices.length < 2) continue;
 
         const currentPrice = prices[0].price;
@@ -74,7 +75,7 @@ export class AlertService {
         const increasePercentage =
           ((currentPrice - oneHourAgoPrice) / oneHourAgoPrice) * 100;
 
-        if (increasePercentage > 3) {
+        if (increasePercentage) {
           await this.sendPriceIncreaseEmail(
             chain,
             currentPrice,
@@ -111,8 +112,8 @@ export class AlertService {
     previousPrice: number,
     increasePercentage: number,
   ) {
-    const subject = `Price Increase Alert: ${chain.toUpperCase()} price has increased by ${increasePercentage.toFixed(2)}%`;
-    const text = `The price of ${chain.toUpperCase()} has increased by ${increasePercentage.toFixed(2)}% in the last hour. Previous price: $${previousPrice.toFixed(2)}. Current price: $${currentPrice.toFixed(2)}.`;
+    const subject = `Price Increase Alert: ${chain.toUpperCase()} price has increased by ${increasePercentage}%`;
+    const text = `The price of ${chain.toUpperCase()} has increased by ${increasePercentage}% in the last hour. Previous price: $${previousPrice}. Current price: $${currentPrice}.`;
     await this.sendEmail(this.configService.get('alertEmail'), subject, text);
   }
 
