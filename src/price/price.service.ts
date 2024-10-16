@@ -1,13 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { Inject, Injectable } from '@nestjs/common';
+// import { InjectRepository } from '@nestjs/typeorm';
 import { MoreThanOrEqual, Repository } from 'typeorm';
 import { Price } from './entities/price.entity';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class PriceService {
+  // constructor(
+  //   @InjectRepository(Price)
+  //   private priceRepository: Repository<Price>,
+  //   private configService: ConfigService,
+  // ) {}
   constructor(
-    @InjectRepository(Price)
+    @Inject('PRICE_REPOSITORY')
     private priceRepository: Repository<Price>,
     private configService: ConfigService,
   ) {}

@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import configuration from './config/configuration';
 import { PriceModule } from './price/price.module';
+import { AlertModule } from './alert/alert.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -25,6 +26,7 @@ import { PriceModule } from './price/price.module';
       inject: [ConfigService],
     }),
     PriceModule,
+    AlertModule,
   ],
 })
 export class AppModule {}
