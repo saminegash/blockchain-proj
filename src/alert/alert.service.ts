@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Alert } from './entities/alert.entity';
@@ -32,8 +32,16 @@ export class AlertService {
     targetPrice: number,
     email: string,
   ): Promise<Alert> {
-    const alert = this.alertRepository.create({ chain, targetPrice, email });
-    return this.alertRepository.save(alert);
+    try {
+      const alert = this.alertRepository.create({ chain, targetPrice, email });
+      return await this.alertRepository.save(alert);
+    } catch (error) {
+      this.logger.error(`Error creating alert: ${error.message}`, error.stack);
+      throw new HttpException(
+        'Failed to create alert',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async checkAlerts() {
@@ -50,7 +58,7 @@ export class AlertService {
         }
       }
     } catch (error) {
-      this.logger.error('Error checking alerts', error.stack);
+      this.logger.error(`Error checking alerts: ${error.message}`, error.stack);
     }
   }
 
@@ -76,7 +84,7 @@ export class AlertService {
         }
       } catch (error) {
         this.logger.error(
-          `Error checking price increase for ${chain}`,
+          `Error checking price increase for ${chain}: ${error.message}`,
           error.stack,
         );
       }
@@ -85,7 +93,10 @@ export class AlertService {
 
   private async getCurrentPrice(chain: string): Promise<number> {
     const prices = await this.priceService.getPricesLastHour(chain);
-    return prices[0]?.price || 0;
+    if (prices.length === 0) {
+      throw new Error(`No recent prices found for ${chain}`);
+    }
+    return prices[0].price;
   }
 
   private async sendAlertEmail(alert: Alert, currentPrice: number) {
@@ -115,7 +126,8 @@ export class AlertService {
       });
       this.logger.log(`Email sent to ${to}: ${subject}`);
     } catch (error) {
-      this.logger.error('Error sending email', error.stack);
+      this.logger.error(`Error sending email: ${error.message}`, error.stack);
+      throw new Error('Failed to send email');
     }
   }
 }

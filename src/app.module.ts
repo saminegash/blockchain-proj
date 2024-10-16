@@ -5,6 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PriceModule } from './price/price.module';
 import { AlertModule } from './alert/alert.module';
+import { HealthController } from './health/health.controller';
+import { ScheduledTasksService } from './scheduled-tasks.service';
 import configuration from './config/configuration';
 
 @Module({
@@ -31,5 +33,7 @@ import configuration from './config/configuration';
     PriceModule,
     AlertModule,
   ],
+  controllers: [HealthController],
+  providers: [ScheduledTasksService],
 })
 export class AppModule {}

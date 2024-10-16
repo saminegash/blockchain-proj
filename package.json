@@ -28,9 +28,12 @@
     "@nestjs/swagger": "^7.4.2",
     "@nestjs/typeorm": "^10.0.2",
     "axios": "^1.7.7",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
     "moralis": "^2.27.2",
     "nodemailer": "^6.9.15",
     "pg": "^8.13.0",
+    "rate-limiter-flexible": "^5.0.3",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.20"

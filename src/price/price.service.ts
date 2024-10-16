@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThan, Repository } from 'typeorm';
+import { Repository, MoreThan } from 'typeorm';
 import { Price } from './entities/price.entity';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
@@ -28,7 +28,11 @@ export class PriceService {
         this.logger.log(`Saved ${chain} price: $${price}`);
       }
     } catch (error) {
-      this.logger.error('Error saving prices', error.stack);
+      this.logger.error(`Error saving prices: ${error.message}`, error.stack);
+      throw new HttpException(
+        'Failed to save prices',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -44,18 +48,23 @@ export class PriceService {
       });
       return parseFloat(response.data.usdPrice);
     } catch (error) {
-      this.logger.error(`Error fetching ${chain} price`, error.stack);
-      throw error;
+      this.logger.error(
+        `Error fetching ${chain} price: ${error.message}`,
+        error.stack,
+      );
+      throw new HttpException(
+        `Failed to fetch ${chain} price`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
   private getAddress(chain: string): string {
-    // You might want to store these in a configuration file
     const addresses = {
       ethereum: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2', // WETH
       polygon: '0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270', // WMATIC
     };
-    return addresses[chain];
+    return addresses[chain] || '';
   }
 
   async getPricesLastHour(chain: string): Promise<Price[]> {

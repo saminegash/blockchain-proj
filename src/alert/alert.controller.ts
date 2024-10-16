@@ -1,6 +1,13 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  ValidationPipe,
+  UsePipes,
+} from '@nestjs/common';
 import { AlertService } from './alert.service';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { CreateAlertDto } from './dto/create-alert.dto';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('alerts')
 @Controller('alerts')
@@ -9,13 +16,17 @@ export class AlertController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new price alert' })
-  async createAlert(
-    @Body() alertData: { chain: string; targetPrice: number; email: string },
-  ) {
+  @ApiResponse({
+    status: 201,
+    description: 'The alert has been successfully created.',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input data.' })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async createAlert(@Body() createAlertDto: CreateAlertDto) {
     return this.alertService.createAlert(
-      alertData.chain,
-      alertData.targetPrice,
-      alertData.email,
+      createAlertDto.chain,
+      createAlertDto.targetPrice,
+      createAlertDto.email,
     );
   }
 }
