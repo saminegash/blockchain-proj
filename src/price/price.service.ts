@@ -100,4 +100,47 @@ export class PriceService {
     });
     return response;
   }
+
+  async getSwapRate(
+    ethAmount: number,
+  ): Promise<{ btcAmount: number; feeEth: number; feeUSD: number }> {
+    try {
+      const response = await Moralis.EvmApi.token.getMultipleTokenPrices(
+        { chain: '0x1', include: 'percent_change' },
+        {
+          tokens: [
+            { tokenAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2' },
+            { tokenAddress: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599' },
+          ],
+        },
+      );
+
+      console.log(ethAmount);
+      const ethPrice = response.raw[0].usdPrice;
+      const btcPrice = response.raw[1].usdPrice;
+
+      // Calculate swap values
+      const ethValue = ethAmount * ethPrice;
+      const btcAmount = ethValue / btcPrice;
+
+      const feePercentage = 0.03 / 100;
+      const feeEth = ethAmount * feePercentage;
+      const feeUSD = feeEth * ethPrice;
+
+      return {
+        btcAmount,
+        feeEth,
+        feeUSD,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error fetching ethereum and bitcoin price: ${error.message}`,
+        error.stack,
+      );
+      throw new HttpException(
+        `Failed to calculate swap rate`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

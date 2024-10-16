@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
 import { PriceService } from './price.service';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { Price } from './entities/price.entity';
@@ -40,5 +40,14 @@ export class PriceController {
       }
     }
     return hourlyPrices.reverse();
+  }
+
+  @Get('swap-rate')
+  async getSwapRate(@Query('ethAmount') ethAmount: string) {
+    const amount = parseFloat(ethAmount);
+    if (isNaN(amount)) {
+      throw new BadRequestException('Invalid ETH amount');
+    }
+    return this.priceService.getSwapRate(amount);
   }
 }
