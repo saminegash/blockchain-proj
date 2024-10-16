@@ -1,13 +1,14 @@
-FROM node:14
-
+FROM node:19
+RUN npm install -g pnpm
 WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-RUN npm install
+
+RUN pnpm install
 
 COPY . .
 
-RUN npm run build
+RUN pnpm run build
 
-CMD ["npm", "run", "start:prod"]
+CMD [ "pnpm", "start:dev" ]

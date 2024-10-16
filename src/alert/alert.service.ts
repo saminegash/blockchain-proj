@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Alert } from './entities/alert.entity';
@@ -8,6 +8,7 @@ import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class AlertService {
+  private readonly logger = new Logger(AlertService.name);
   private transporter: nodemailer.Transporter;
 
   constructor(
@@ -36,15 +37,85 @@ export class AlertService {
   }
 
   async checkAlerts() {
-    // Implement logic to check alerts and send emails
+    try {
+      const alerts = await this.alertRepository.find({
+        where: { triggered: false },
+      });
+      for (const alert of alerts) {
+        const currentPrice = await this.getCurrentPrice(alert.chain);
+        if (currentPrice >= alert.targetPrice) {
+          await this.sendAlertEmail(alert, currentPrice);
+          alert.triggered = true;
+          await this.alertRepository.save(alert);
+        }
+      }
+    } catch (error) {
+      this.logger.error('Error checking alerts', error.stack);
+    }
+  }
+
+  async checkPriceIncrease() {
+    const chains = ['ethereum', 'polygon'];
+    for (const chain of chains) {
+      try {
+        const prices = await this.priceService.getPricesLastHour(chain);
+        if (prices.length < 2) continue;
+
+        const currentPrice = prices[0].price;
+        const oneHourAgoPrice = prices[prices.length - 1].price;
+        const increasePercentage =
+          ((currentPrice - oneHourAgoPrice) / oneHourAgoPrice) * 100;
+
+        if (increasePercentage > 3) {
+          await this.sendPriceIncreaseEmail(
+            chain,
+            currentPrice,
+            oneHourAgoPrice,
+            increasePercentage,
+          );
+        }
+      } catch (error) {
+        this.logger.error(
+          `Error checking price increase for ${chain}`,
+          error.stack,
+        );
+      }
+    }
+  }
+
+  private async getCurrentPrice(chain: string): Promise<number> {
+    const prices = await this.priceService.getPricesLastHour(chain);
+    return prices[0]?.price || 0;
+  }
+
+  private async sendAlertEmail(alert: Alert, currentPrice: number) {
+    const subject = `Price Alert: ${alert.chain.toUpperCase()} has reached $${currentPrice}`;
+    const text = `The price of ${alert.chain.toUpperCase()} has reached your target price of $${alert.targetPrice}. The current price is $${currentPrice}.`;
+    await this.sendEmail(alert.email, subject, text);
+  }
+
+  private async sendPriceIncreaseEmail(
+    chain: string,
+    currentPrice: number,
+    previousPrice: number,
+    increasePercentage: number,
+  ) {
+    const subject = `Price Increase Alert: ${chain.toUpperCase()} price has increased by ${increasePercentage.toFixed(2)}%`;
+    const text = `The price of ${chain.toUpperCase()} has increased by ${increasePercentage.toFixed(2)}% in the last hour. Previous price: $${previousPrice.toFixed(2)}. Current price: $${currentPrice.toFixed(2)}.`;
+    await this.sendEmail(this.configService.get('alertEmail'), subject, text);
   }
 
   private async sendEmail(to: string, subject: string, text: string) {
-    await this.transporter.sendMail({
-      from: this.configService.get('smtp.user'),
-      to,
-      subject,
-      text,
-    });
+    try {
+      await this.transporter.sendMail({
+        from: this.configService.get('smtp.user'),
+        to,
+        subject,
+        text,
+      });
+      this.logger.log(`Email sent to ${to}: ${subject}`);
+    } catch (error) {
+      this.logger.error('Error sending email', error.stack);
+    }
   }
 }
