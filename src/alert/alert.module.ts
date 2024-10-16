@@ -9,5 +9,6 @@ import { PriceModule } from '../price/price.module';
   imports: [TypeOrmModule.forFeature([Alert]), PriceModule],
   providers: [AlertService],
   controllers: [AlertController],
+  exports: [AlertService],
 })
 export class AlertModule {}

@@ -3,8 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 import { Price } from './entities/price.entity';
 import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
-
+import Moralis from 'moralis';
 @Injectable()
 export class PriceService {
   private readonly logger = new Logger(PriceService.name);
@@ -13,7 +12,11 @@ export class PriceService {
     @InjectRepository(Price)
     private priceRepository: Repository<Price>,
     private configService: ConfigService,
-  ) {}
+  ) {
+    Moralis.start({
+      apiKey: process.env.MORALIS_API_KEY,
+    });
+  }
 
   async savePrices() {
     try {
@@ -37,16 +40,12 @@ export class PriceService {
   }
 
   private async fetchPrice(chain: string): Promise<number> {
-    const apiKey = this.configService.get('moralis.apiKey');
-    const url = `https://deep-index.moralis.io/api/v2/erc20/${this.getAddress(chain)}/price`;
-
     try {
-      const response = await axios.get(url, {
-        headers: {
-          'X-API-Key': apiKey,
-        },
-      });
-      return parseFloat(response.data.usdPrice);
+      const response = await Moralis.EvmApi.token.getTokenPrice(
+        this.getAddress(chain),
+      );
+
+      return response.raw.usdPrice;
     } catch (error) {
       this.logger.error(
         `Error fetching ${chain} price: ${error.message}`,
@@ -59,10 +58,23 @@ export class PriceService {
     }
   }
 
-  private getAddress(chain: string): string {
+  private getAddress(chain: string): {
+    chain: string;
+    include: 'percent_change';
+    address: string;
+  } {
     const addresses = {
-      ethereum: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2', // WETH
-      polygon: '0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270', // WMATIC
+      ethereum: {
+        chain: '0x1',
+        include: 'percent_change',
+        address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+      },
+
+      polygon: {
+        chain: '0x89',
+        include: 'percent_change',
+        address: '0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270',
+      },
     };
     return addresses[chain] || '';
   }
@@ -80,11 +92,12 @@ export class PriceService {
 
   async getPricesLast24Hours(): Promise<Price[]> {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    return this.priceRepository.find({
+    const response = await this.priceRepository.find({
       where: {
         timestamp: MoreThan(oneDayAgo),
       },
       order: { timestamp: 'DESC' },
     });
+    return response;
   }
 }
