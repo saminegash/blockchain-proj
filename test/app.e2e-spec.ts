@@ -21,4 +21,29 @@ describe('AppController (e2e)', () => {
       .expect(200)
       .expect('Hello World!');
   });
+
+  it('/health (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/health')
+      .expect(200)
+      .expect({ status: 'ok' });
+  });
+
+  it('/prices/last-24-hours (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/prices/last-24-hours?chain=ethereum')
+      .expect(200)
+      .expect('Content-Type', /json/);
+  });
+
+  it('/alerts (POST)', () => {
+    return request(app.getHttpServer())
+      .post('/alerts')
+      .send({ chain: 'ethereum', targetPrice: 2000, email: 'test@example.com' })
+      .expect(201);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
 });
